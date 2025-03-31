@@ -1,0 +1,91 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-light text-dark;
+  }
+}
+
+@layer components {
+  .btn {
+    @apply inline-flex items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:opacity-50;
+  }
+
+  .btn-primary {
+    @apply bg-[#FF6B6B] text-white hover:bg-opacity-90 focus-visible:ring-[#FF6B6B];
+  }
+
+  .btn-secondary {
+    @apply bg-[#4ECDC4] text-white hover:bg-opacity-90 focus-visible:ring-[#4ECDC4];
+  }
+
+  .btn-outline {
+    @apply border border-[#1A535C] text-[#1A535C] hover:bg-[#1A535C] hover:text-white;
+  }
+
+  .btn-danger {
+    @apply bg-red-500 text-white hover:bg-opacity-90 focus-visible:ring-red-500;
+  }
+
+  .badge {
+    @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium;
+  }
+
+  .badge-yellow {
+    @apply bg-yellow-100 text-yellow-700;
+  }
+
+  .badge-blue {
+    @apply bg-blue-100 text-blue-700;
+  }
+
+  .badge-indigo {
+    @apply bg-indigo-100 text-indigo-700;
+  }
+
+  .badge-green {
+    @apply bg-green-100 text-green-700;
+  }
+
+  .badge-red {
+    @apply bg-red-100 text-red-700;
+  }
+
+  .card {
+    @apply rounded-lg border bg-white p-6 shadow-md;
+  }
+
+  .card-title {
+    @apply mb-4 text-xl font-semibold;
+  }
+
+  .form-label {
+    @apply mb-1 block text-sm font-medium;
+  }
+
+  .form-input {
+    @apply w-full rounded border border-gray-300 p-2 focus:border-[#4ECDC4] focus:outline-none focus:ring-1 focus:ring-[#4ECDC4];
+  }
+
+  .form-error {
+    @apply mt-1 text-xs text-red-500;
+  }
+
+  .container {
+    @apply mx-auto px-4 sm:px-6 lg:px-8;
+  }
+
+  .section {
+    @apply py-8;
+  }
+
+  .page-title {
+    @apply mb-6 text-2xl font-bold;
+  }
+
+  .loading-spinner {
+    @apply h-10 w-10 animate-spin rounded-full border-4 border-[#1A535C] border-t-transparent;
+  }
+} 

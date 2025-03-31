@@ -1,0 +1,205 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --primary: #1A535C;
+    --primary-light: #4ECDC4;
+    --secondary: #FF6B6B;
+    --accent: #FFE66D;
+    --background: #F7FFF7;
+  }
+  
+  body {
+    @apply bg-[#F7FFF7] text-gray-800;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    @apply text-[#1A535C];
+  }
+}
+
+@layer components {
+  .container {
+    @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+  }
+  
+  /* Buttons */
+  .btn {
+    @apply inline-block px-4 py-2 rounded-md font-medium transition-all duration-300;
+  }
+  
+  .btn-primary {
+    @apply bg-[#4ECDC4] text-white hover:bg-[#1A535C] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#4ECDC4] shadow-sm hover:shadow-md;
+  }
+  
+  .btn-secondary {
+    @apply bg-[#FF6B6B] text-white hover:bg-opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FF6B6B] shadow-sm hover:shadow-md;
+  }
+  
+  .btn-outline {
+    @apply border border-[#4ECDC4] text-[#4ECDC4] hover:bg-[#4ECDC4] hover:text-white shadow-sm hover:shadow-md;
+  }
+  
+  .btn-danger {
+    @apply bg-red-600 text-white hover:bg-red-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600 shadow-sm hover:shadow-md;
+  }
+  
+  /* Badges */
+  .badge-yellow {
+    @apply bg-[#FFE66D] text-[#1A535C] text-xs px-2 py-1 rounded-full;
+  }
+  
+  .badge-blue {
+    @apply bg-[#4ECDC4] text-white text-xs px-2 py-1 rounded-full;
+  }
+  
+  .badge-indigo {
+    @apply bg-indigo-600 text-white text-xs px-2 py-1 rounded-full;
+  }
+  
+  .badge-green {
+    @apply bg-green-500 text-white text-xs px-2 py-1 rounded-full;
+  }
+  
+  .badge-red {
+    @apply bg-[#FF6B6B] text-white text-xs px-2 py-1 rounded-full;
+  }
+  
+  /* Cards */
+  .card {
+    @apply bg-white rounded-lg shadow-md p-6 transition-all duration-300 hover:shadow-lg;
+  }
+  
+  .card-title {
+    @apply text-xl font-semibold mb-4;
+  }
+  
+  /* Forms */
+  .form-label {
+    @apply block text-sm font-medium mb-1 text-gray-700;
+  }
+  
+  .form-input {
+    @apply block w-full rounded-md border-gray-300 shadow-sm focus:border-[#4ECDC4] focus:ring-[#4ECDC4] py-2 px-3;
+  }
+  
+  .form-error {
+    @apply text-red-600 text-sm mt-1;
+  }
+  
+  /* Containers */
+  .container-tight {
+    @apply max-w-2xl mx-auto px-4;
+  }
+  
+  /* Sections */
+  .section {
+    @apply py-12;
+  }
+  
+  .section-title {
+    @apply text-3xl font-bold mb-8 text-center;
+  }
+  
+  /* Loading Spinner */
+  .loading-spinner {
+    @apply h-10 w-10 animate-spin rounded-full border-4 border-[#4ECDC4] border-t-transparent;
+  }
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #4ECDC4;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #1A535C;
+}
+
+/* Line Clamp Utility */
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.8s ease-out forwards;
+}
+
+.animate-fade-in-delay {
+  opacity: 0;
+  animation: fadeIn 0.8s ease-out 0.2s forwards;
+}
+
+.animate-fade-in-delay-2 {
+  opacity: 0;
+  animation: fadeIn 0.8s ease-out 0.4s forwards;
+}
+
+.animate-slide-in-right {
+  animation: slideInRight 0.6s ease-out forwards;
+}
+
+.animate-pulse-slow {
+  animation: pulse 3s ease-in-out infinite;
+}
+
+/* Grid Pattern for Backgrounds */
+.grid-pattern {
+  background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%234ecdc4' fill-opacity='0.1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+}
+
+/* Glass effect */
+.glass-effect {
+  @apply backdrop-blur-md bg-white/30 border border-white/20;
+}
+
+/* Focus ring */
+.focus-ring {
+  @apply focus:outline-none focus-visible:ring-2 focus-visible:ring-[#4ECDC4] focus-visible:ring-offset-2;
+} 

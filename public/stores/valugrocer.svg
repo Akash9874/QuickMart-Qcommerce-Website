@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="225" viewBox="0 0 400 225">
+  <rect width="400" height="225" fill="#f1f5f9" />
+  <polygon points="150,70 250,70 270,140 130,140" fill="#FF6B6B" />
+  <text x="200" y="115" font-family="Arial" font-size="20" font-weight="bold" fill="white" text-anchor="middle">ValuGrocer</text>
+  <rect x="150" y="150" width="100" height="20" fill="#1A535C" />
+  <text x="200" y="165" font-family="Arial" font-size="12" fill="white" text-anchor="middle">SAVE MORE</text>
+</svg> 

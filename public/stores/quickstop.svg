@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="225" viewBox="0 0 400 225">
+  <rect width="400" height="225" fill="#f1f5f9" />
+  <circle cx="200" cy="112.5" r="60" fill="#4ECDC4" />
+  <text x="200" y="110" font-family="Arial" font-size="20" font-weight="bold" fill="#1A535C" text-anchor="middle">QuickStop</text>
+  <text x="200" y="135" font-family="Arial" font-size="14" fill="#1A535C" text-anchor="middle">CONVENIENCE STORE</text>
+</svg> 
