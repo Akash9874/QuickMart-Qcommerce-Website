@@ -3,12 +3,18 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/app/lib/auth';
 import { prisma } from '@/app/lib/prisma';
 
+// Define the correct type format for Next.js 15.2.4
+type Params = {
+  id: string;
+};
+
+// Update the function signature to use the proper type
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Params }
 ) {
   try {
-    const orderId = parseInt(params.id);
+    const orderId = parseInt(context.params.id);
     if (isNaN(orderId)) {
       return NextResponse.json(
         { error: 'Invalid order ID' },
