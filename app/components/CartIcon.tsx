@@ -5,14 +5,11 @@ import { ShoppingBag } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { cn } from '@/lib/utils';
 
-export default function CartIcon() {
+export default function CartIcon({ isLink = true }: { isLink?: boolean }) {
   const { cartItemsCount } = useCart();
   
-  return (
-    <Link 
-      href="/cart" 
-      className="relative inline-flex items-center justify-center"
-    >
+  const content = (
+    <>
       <ShoppingBag className="h-6 w-6 text-white" />
       {cartItemsCount > 0 && (
         <span className={cn(
@@ -22,6 +19,23 @@ export default function CartIcon() {
           {cartItemsCount > 99 ? '99+' : cartItemsCount}
         </span>
       )}
-    </Link>
+    </>
+  );
+  
+  if (isLink) {
+    return (
+      <Link 
+        href="/cart" 
+        className="relative inline-flex items-center justify-center"
+      >
+        {content}
+      </Link>
+    );
+  }
+  
+  return (
+    <div className="relative inline-flex items-center justify-center">
+      {content}
+    </div>
   );
 } 

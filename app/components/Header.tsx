@@ -82,9 +82,9 @@ export default function Header() {
           <div className="hidden md:flex items-center space-x-4">
             {status === 'authenticated' ? (
               <>
-                <div className={`transition duration-300 relative p-2 rounded-full hover:bg-[#4ECDC4]/20 ${isActive('/cart') ? 'text-[#4ECDC4]' : 'hover:text-[#4ECDC4]'}`}>
-                  <CartIcon />
-                </div>
+                <Link href="/cart" className={`transition duration-300 relative p-2 rounded-full hover:bg-[#4ECDC4]/20 ${isActive('/cart') ? 'text-[#4ECDC4]' : 'hover:text-[#4ECDC4]'}`}>
+                  <CartIcon isLink={false} />
+                </Link>
                 <div className="relative group">
                   <button className="flex items-center space-x-2 p-2 rounded-full transition duration-300 hover:bg-[#4ECDC4]/20">
                     <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#4ECDC4] text-white">
@@ -206,7 +206,7 @@ export default function Header() {
                       onClick={() => setIsMenuOpen(false)}
                     >
                       <div className="relative mr-2">
-                        <CartIcon />
+                        <CartIcon isLink={false} />
                       </div>
                       Cart
                     </Link>
