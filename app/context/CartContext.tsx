@@ -23,10 +23,17 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   const updateCartCount = async () => {
     try {
       setIsLoading(true);
-      const response = await fetch('/api/cart');
+      console.log('Fetching cart data...');
+      const response = await fetch('/api/cart', { 
+        method: 'GET',
+        headers: {
+          'Cache-Control': 'no-cache'
+        }
+      });
       
       // If user is not authenticated, just set cart count to 0 and don't treat as error
       if (response.status === 401) {
+        console.log('User not authenticated, empty cart');
         setCartItemsCount(0);
         setIsLoading(false);
         return;
@@ -43,6 +50,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       let data;
       try {
         const text = await response.text();
+        console.log('Cart API response:', text);
         data = text ? JSON.parse(text) : {};
       } catch (parseError) {
         console.error('Error parsing cart response:', parseError);
@@ -54,8 +62,10 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       // Calculate total items (sum of all quantities)
       if (data && data.items) {
         const totalItems = data.items.reduce((total: number, item: any) => total + item.quantity, 0);
+        console.log('Total cart items:', totalItems);
         setCartItemsCount(totalItems);
       } else {
+        console.log('No items in cart or invalid cart data');
         setCartItemsCount(0);
       }
     } catch (error) {
@@ -73,7 +83,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       // Add a small delay to ensure authentication is initialized
       const timer = setTimeout(() => {
         updateCartCount();
-      }, 500);
+      }, 1000); // Increase delay to 1000ms to ensure auth is ready
       
       return () => clearTimeout(timer);
     }

@@ -6,17 +6,19 @@ import { Prisma } from '@prisma/client';
 
 export async function GET() {
   try {
+    console.log('Cart GET API - Request received');
+    
     // Check authentication
     const session = await getServerSession(authOptions);
     if (!session?.user?.email) {
-      console.log('Cart API - Unauthorized: No session or email');
+      console.log('Cart GET API - Unauthorized: No session or email');
       return NextResponse.json({ items: [], totalAmount: 0 }, { status: 200 });
     }
 
     try {
       // Find the user by email using raw SQL
       const userEmail = session.user.email;
-      console.log('Cart API - Looking up user with email:', userEmail);
+      console.log('Cart GET API - Looking up user with email:', userEmail);
       
       // Begin with a safe default response
       const emptyResponse = {
@@ -30,12 +32,12 @@ export async function GET() {
       `;
 
       if (!users || !Array.isArray(users) || users.length === 0) {
-        console.log('Cart API - User not found for email:', userEmail);
+        console.log('Cart GET API - User not found for email:', userEmail);
         return NextResponse.json(emptyResponse);
       }
 
       const userId = users[0].id;
-      console.log('Cart API - Found user with ID:', userId);
+      console.log('Cart GET API - Found user with ID:', userId);
 
       // Find the cart
       const carts = await prisma.$queryRaw`
@@ -43,15 +45,52 @@ export async function GET() {
       `;
 
       if (!carts || !Array.isArray(carts) || carts.length === 0) {
-        console.log('Cart API - No cart found for user:', userId);
-        return NextResponse.json(emptyResponse);
+        console.log('Cart GET API - No cart found for user:', userId);
+        
+        // Try to create a cart for the user
+        try {
+          console.log('Cart GET API - Creating new cart for user:', userId);
+          await prisma.$executeRaw`
+            INSERT INTO "Cart" ("userId", "createdAt", "updatedAt") 
+            VALUES (${userId}, NOW(), NOW())
+          `;
+          
+          console.log('Cart GET API - New cart created, returning empty cart');
+          return NextResponse.json({
+            id: null,
+            items: [],
+            totalAmount: 0
+          });
+        } catch (createCartError) {
+          console.error('Cart GET API - Error creating cart:', createCartError);
+          return NextResponse.json(emptyResponse);
+        }
       }
 
       const cartId = carts[0].id;
-      console.log('Cart API - Found cart with ID:', cartId);
+      console.log('Cart GET API - Found cart with ID:', cartId);
 
       // Get cart items with product and store information
       try {
+        // First let's check if there are any cart items
+        const countResult = await prisma.$queryRaw`
+          SELECT COUNT(*) as count FROM "CartItem" WHERE "cartId" = ${cartId}
+        `;
+        
+        const itemCount = countResult && Array.isArray(countResult) && countResult.length > 0 
+          ? parseInt(countResult[0].count.toString()) 
+          : 0;
+          
+        console.log(`Cart GET API - Found ${itemCount} items in cart`);
+        
+        if (itemCount === 0) {
+          return NextResponse.json({
+            id: cartId,
+            items: [],
+            totalAmount: 0,
+          });
+        }
+        
         const cartItems = await prisma.$queryRaw`
           SELECT ci.id, ci.quantity, ci."productId", ci."storeId",
                 p.name as productname, p.description as productdescription, p.image as productimage,
@@ -62,14 +101,16 @@ export async function GET() {
           WHERE ci."cartId" = ${cartId}
         `;
 
-        if (!cartItems || !Array.isArray(cartItems)) {
-          console.log('Cart API - No cart items found for cart:', cartId);
+        if (!cartItems || !Array.isArray(cartItems) || cartItems.length === 0) {
+          console.log('Cart GET API - No cart items found for cart:', cartId);
           return NextResponse.json({
             id: cartId,
             items: [],
             totalAmount: 0,
           });
         }
+
+        console.log(`Cart GET API - Retrieved ${cartItems.length} items from database`);
 
         // Format items for the response and get product IDs
         const formattedItems = [];
@@ -81,8 +122,7 @@ export async function GET() {
             const productPrices = await prisma.$queryRaw`
               SELECT "amount"
               FROM "Price"
-              WHERE "productId" = ${item.productId}
-              ORDER BY "amount" ASC
+              WHERE "productId" = ${item.productId} AND "storeId" = ${item.storeId}
               LIMIT 1
             `;
             
@@ -107,10 +147,12 @@ export async function GET() {
               quantity: item.quantity,
             });
           } catch (itemError) {
-            console.error('Cart API - Error processing cart item:', itemError);
+            console.error('Cart GET API - Error processing cart item:', itemError);
             // Continue with other items even if one fails
           }
         }
+
+        console.log(`Cart GET API - Processed ${formattedItems.length} items successfully`);
 
         // Calculate total amount
         const totalAmount = formattedItems.reduce(
@@ -124,9 +166,10 @@ export async function GET() {
           totalAmount,
         };
         
+        console.log(`Cart GET API - Returning cart with ${formattedItems.length} items, total: ${totalAmount}`);
         return NextResponse.json(response);
       } catch (cartItemsError) {
-        console.error('Cart API - Error fetching cart items:', cartItemsError);
+        console.error('Cart GET API - Error fetching cart items:', cartItemsError);
         // Return empty cart instead of error
         return NextResponse.json({
           id: cartId,
@@ -135,7 +178,7 @@ export async function GET() {
         });
       }
     } catch (dbError) {
-      console.error('Cart API - Database error:', dbError);
+      console.error('Cart GET API - Database error:', dbError);
       // Return empty cart data structure rather than an error
       return NextResponse.json({
         id: null,
@@ -144,7 +187,7 @@ export async function GET() {
       });
     }
   } catch (error) {
-    console.error('Cart API - Error in cart route:', error);
+    console.error('Cart GET API - Error in cart route:', error);
     // Return empty cart data structure rather than an error
     return NextResponse.json({
       id: null,
