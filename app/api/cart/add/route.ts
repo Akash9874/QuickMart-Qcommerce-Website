@@ -9,13 +9,23 @@ export async function POST(request: NextRequest) {
     const session = await getServerSession(authOptions);
     if (!session || !session.user?.email) {
       return NextResponse.json(
-        { error: 'Unauthorized' },
+        { error: 'Unauthorized - Please sign in to add items to your cart' },
         { status: 401 }
       );
     }
 
     // Get the request body
-    const body = await request.json();
+    let body;
+    try {
+      body = await request.json();
+    } catch (error) {
+      console.error('Invalid request body:', error);
+      return NextResponse.json(
+        { error: 'Invalid request format' },
+        { status: 400 }
+      );
+    }
+    
     const { productId, quantity = 1, storeId = 1 } = body;  // Default to storeId 1 if not provided
 
     if (!productId) {

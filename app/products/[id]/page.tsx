@@ -93,10 +93,22 @@ export default function ProductDetailPage() {
         }),
       });
 
-      const data = await response.json();
+      let data;
+      try {
+        data = await response.json();
+      } catch (jsonError) {
+        console.error('Error parsing response:', jsonError);
+        data = { error: 'Invalid response from server' };
+      }
       
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to add to cart');
+        console.error('Error response:', data);
+        toast({
+          title: 'Error',
+          description: data?.error || 'Failed to add product to cart',
+          variant: 'destructive',
+        });
+        return;
       }
 
       // Update cart count after successful addition
