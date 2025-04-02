@@ -59,9 +59,12 @@ const products = [
   }
 ];
 
+// Define the params properly for Next.js 15.2.4
+type RouteParams = { id: string };
+
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: RouteParams }
 ) {
   try {
     const productId = parseInt(params.id);
