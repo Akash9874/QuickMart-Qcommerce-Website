@@ -14,5 +14,10 @@
   ],
   "github": {
     "silent": true
+  },
+  "functions": {
+    "api/**": {
+      "memory": 1024
+    }
   }
 } 

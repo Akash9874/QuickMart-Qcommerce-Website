@@ -3,15 +3,9 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/app/lib/auth';
 import { prisma } from '@/app/lib/prisma';
 
-interface ParamProps {
-  params: {
-    id: string;
-  };
-}
-
 export async function GET(
   request: NextRequest,
-  { params }: ParamProps
+  { params }: { params: { id: string } }
 ) {
   try {
     const orderId = parseInt(params.id);
