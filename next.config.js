@@ -11,6 +11,7 @@ const nextConfig = {
     contentDispositionType: 'attachment',
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
     unoptimized: true,
+    domains: ['localhost', 'vercel.app', 'vercel.com'],
   },
   webpack(config) {
     // Handle SVG files
@@ -20,6 +21,9 @@ const nextConfig = {
     });
 
     return config;
+  },
+  experimental: {
+    serverActions: true,
   },
 };
 
