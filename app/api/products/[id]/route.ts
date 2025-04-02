@@ -59,9 +59,15 @@ const products = [
   }
 ];
 
+interface ParamProps {
+  params: {
+    id: string;
+  };
+}
+
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: ParamProps
 ) {
   try {
     const productId = parseInt(params.id);
