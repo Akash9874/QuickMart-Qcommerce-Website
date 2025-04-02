@@ -110,10 +110,12 @@ const ProductCard = memo(({ product }: ProductCardProps) => {
       }
       
       if (!response.ok) {
-        console.error('Error response:', data);
+        // Safe way to log data
+        console.error('Error response:', JSON.stringify(data || {}));
+        
         toast({
           title: 'Error',
-          description: data?.error || 'Failed to add product to cart',
+          description: (data && data.error) ? data.error : 'Failed to add product to cart',
           variant: 'destructive',
         });
         return;

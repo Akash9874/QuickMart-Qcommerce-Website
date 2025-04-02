@@ -63,7 +63,8 @@ export async function POST(request: NextRequest) {
       console.log('Creating new cart for user:', userId);
       
       await prisma.$executeRaw`
-        INSERT INTO "Cart" ("userId") VALUES (${userId})
+        INSERT INTO "Cart" ("userId", "createdAt", "updatedAt") 
+        VALUES (${userId}, NOW(), NOW())
       `;
       
       cart = await prisma.$queryRaw`
