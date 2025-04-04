@@ -12,7 +12,7 @@ interface Store {
 }
 
 interface Price {
-  store: string;
+  store: string | Store;
   amount: number;
   storeId: number;
 }
@@ -20,7 +20,7 @@ interface Price {
 interface Product {
   id: number;
   name: string;
-  image: string;
+  image: string | null;
   description: string;
   prices: Price[];
 }

@@ -6,7 +6,7 @@ import { ShoppingCart, Trash2, Plus, Minus, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { useToast } from '@/components/ui/use-toast';
-import Image from 'next/image';
+import ProductImage from '@/app/components/ProductImage';
 import { useCart } from '@/app/context/CartContext';
 
 interface CartItem {
@@ -16,20 +16,20 @@ interface CartItem {
     id: string;
     name: string;
     description: string;
-    image: string;
+    image: string | null;
     price: number;
-    store: {
-      id: string;
-      name: string;
+    store?: {
+      id?: string;
+      name?: string;
     };
   };
   quantity: number;
 }
 
 interface Cart {
-  id: string;
+  id?: string;
   items: CartItem[];
-  totalAmount: number;
+  total: number;
 }
 
 export default function CartPage() {
@@ -54,6 +54,14 @@ export default function CartPage() {
       }
       const data = await response.json();
       console.log('Cart data:', data);
+      
+      // Debug image paths in cart items
+      if (data.items && data.items.length > 0) {
+        data.items.forEach((item: any) => {
+          console.log(`Cart item ${item.id}: Product: ${item.product.name}, Image path: ${item.product.image}`);
+        });
+      }
+      
       setCart(data);
     } catch (err) {
       console.error('Error fetching cart:', err);
@@ -227,23 +235,28 @@ export default function CartPage() {
             <Card key={item.id} className="p-4">
               <div className="flex gap-4">
                 <div className="relative w-24 h-24 flex-shrink-0">
-                  <Image
-                    src={item.product.image.startsWith('/') ? item.product.image : `/products/${item.product.image}`}
-                    alt={item.product.name}
-                    fill
-                    className="rounded-lg object-cover"
-                    onError={(e) => {
-                      const target = e.target as HTMLImageElement;
-                      target.src = '/placeholder.svg';
-                    }}
-                  />
+                  {item.product.image ? (
+                    <img 
+                      src={item.product.image}
+                      alt={item.product.name}
+                      className="w-full h-full object-cover rounded-lg"
+                      onError={(e) => {
+                        console.error(`Error loading image: ${item.product.image}`);
+                        e.currentTarget.src = '/placeholder.svg';
+                      }}
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center bg-gray-100 rounded-lg">
+                      <span className="text-xs text-gray-500">No image</span>
+                    </div>
+                  )}
                 </div>
                 <div className="flex-grow">
                   <div className="flex justify-between items-start">
                     <div>
                       <h3 className="font-semibold">{item.product.name}</h3>
                       <p className="text-sm text-muted-foreground">
-                        {item.product.store.name}
+                        {item.product.store?.name || 'Unknown Store'}
                       </p>
                     </div>
                     <Button
@@ -294,7 +307,7 @@ export default function CartPage() {
             <div className="space-y-2">
               <div className="flex justify-between">
                 <span>Subtotal</span>
-                <span>${cart.totalAmount.toFixed(2)}</span>
+                <span>${cart.total.toFixed(2)}</span>
               </div>
               <div className="flex justify-between">
                 <span>Shipping</span>
@@ -303,7 +316,7 @@ export default function CartPage() {
               <div className="border-t pt-2 mt-2">
                 <div className="flex justify-between font-semibold">
                   <span>Total</span>
-                  <span>${cart.totalAmount.toFixed(2)}</span>
+                  <span>${cart.total.toFixed(2)}</span>
                 </div>
               </div>
             </div>

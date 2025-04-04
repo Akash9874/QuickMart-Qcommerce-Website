@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import LoadingSpinner from '../../../components/LoadingSpinner';
 
@@ -32,28 +32,38 @@ interface Order {
   items: OrderItem[];
 }
 
-export default function OrderConfirmationPage({ params }: { params: { id: string } }) {
+// For client component pages, we don't need to rely on the params prop
+export default function OrderConfirmationPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const params = useParams();
+  const orderId = typeof params?.id === 'string' ? params.id : '';
+  
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (!orderId) {
+      setError('Invalid order ID');
+      setLoading(false);
+      return;
+    }
+    
     if (status === 'unauthenticated') {
-      router.push('/login?callbackUrl=/checkout/confirmation/' + params.id);
+      router.push('/login?callbackUrl=/checkout/confirmation/' + orderId);
       return;
     }
 
     if (status === 'authenticated') {
       fetchOrderDetails();
     }
-  }, [status, router, params.id]);
+  }, [status, router, orderId]);
 
   const fetchOrderDetails = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`/api/orders/${params.id}`);
+      const response = await fetch(`/api/orders/${orderId}`);
       
       if (!response.ok) {
         if (response.status === 404) {

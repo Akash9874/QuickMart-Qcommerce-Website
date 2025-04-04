@@ -1,44 +1,20 @@
-import { NextResponse } from 'next/server';
-import { prisma } from '@/app/lib/prisma';
+import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/app/lib/auth';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    console.log('Test API endpoint called');
-    
-    // Try to fetch a simple count from each table
-    const userCount = await prisma.user.count();
-    const productCount = await prisma.product.count();
-    const storeCount = await prisma.store.count();
-    
-    // Check if we can find any user
-    const anyUser = await prisma.user.findFirst();
-    const userId = anyUser?.id;
-    
-    // Try to directly access the database connection
-    const databaseUrl = process.env.DATABASE_URL || 'Not configured';
-    const isDatabaseUrlSet = !!process.env.DATABASE_URL;
-    
-    console.log('Database tests completed successfully');
+    const session = await getServerSession(authOptions);
     
     return NextResponse.json({
-      success: true,
-      counts: {
-        users: userCount,
-        products: productCount,
-        stores: storeCount
-      },
-      foundUser: userId ? true : false,
-      databaseInfo: {
-        isDatabaseUrlSet,
-        databaseUrl: databaseUrl.substring(0, 15) + '...' // Just show beginning for security
-      }
+      message: 'Test API endpoint is working',
+      authenticated: !!session,
+      user: session?.user?.email || 'Not authenticated',
+      timestamp: new Date().toISOString()
     });
-  } catch (error) {
-    console.error('Test API Error:', error);
+  } catch (error: any) {
     return NextResponse.json({
-      success: false,
-      error: error instanceof Error ? error.message : String(error),
-      stack: error instanceof Error ? error.stack : undefined
+      error: `Test error: ${error.message || 'Unknown error'}`
     }, { status: 500 });
   }
 } 

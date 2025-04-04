@@ -28,9 +28,9 @@ interface CartItem {
 }
 
 interface Cart {
-  id: string;
+  id?: string;
   items: CartItem[];
-  totalAmount: number;
+  total: number;
 }
 
 export default function CheckoutPage() {
@@ -505,7 +505,7 @@ export default function CheckoutPage() {
             <div className="border-t mt-4 pt-4">
               <div className="flex justify-between mb-2">
                 <span className="text-gray-600">Subtotal:</span>
-                <span>${cart.totalAmount.toFixed(2)}</span>
+                <span>${cart.total.toFixed(2)}</span>
               </div>
               <div className="flex justify-between mb-2">
                 <span className="text-gray-600">Shipping:</span>
@@ -513,11 +513,11 @@ export default function CheckoutPage() {
               </div>
               <div className="flex justify-between mb-2">
                 <span className="text-gray-600">Tax:</span>
-                <span>${(cart.totalAmount * 0.08).toFixed(2)}</span>
+                <span>${(cart.total * 0.08).toFixed(2)}</span>
               </div>
               <div className="flex justify-between mt-4 pt-4 border-t font-semibold">
                 <span>Total:</span>
-                <span>${(cart.totalAmount + 5.99 + cart.totalAmount * 0.08).toFixed(2)}</span>
+                <span>${(cart.total + 5.99 + cart.total * 0.08).toFixed(2)}</span>
               </div>
             </div>
             

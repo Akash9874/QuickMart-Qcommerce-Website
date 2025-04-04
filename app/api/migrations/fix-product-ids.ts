@@ -1,4 +1,4 @@
-const { PrismaClient } = require('@prisma/client');
+import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 
 /**
@@ -6,7 +6,7 @@ const prisma = new PrismaClient();
  * ensuring they match the expected values in the application.
  */
 
-async function fixProductIds() {
+export async function fixProductIds() {
   console.log('Starting product ID migration...');
 
   try {
@@ -140,21 +140,21 @@ async function fixProductIds() {
     console.log('Updated products:', updatedProducts.map(p => `${p.id}: ${p.name}`));
     
     console.log('Migration completed successfully!');
+    return { success: true, message: 'Product IDs fixed successfully' };
   } catch (error) {
     console.error('Migration failed:', error);
+    return { success: false, error: error instanceof Error ? error.message : String(error) };
   } finally {
     await prisma.$disconnect();
   }
 }
 
 // For direct execution via Node.js
-if (require.main === module) {
+if (typeof require !== 'undefined' && require.main === module) {
   fixProductIds()
     .then(() => process.exit(0))
     .catch(error => {
       console.error(error);
       process.exit(1);
     });
-}
-
-module.exports = { fixProductIds }; 
+} 

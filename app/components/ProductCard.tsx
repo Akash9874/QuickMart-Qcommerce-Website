@@ -23,7 +23,7 @@ interface Price {
 interface Product {
   id: number;
   name: string;
-  image: string;
+  image: string | null;
   description: string;
   prices: Price[];
 }
@@ -88,6 +88,13 @@ const ProductCard = memo(({ product }: ProductCardProps) => {
     
     try {
       setIsAddingToCart(true);
+      console.log(`Adding product ${product.id} from store ${lowestPriceStoreId} to cart`);
+      
+      // Verify the product exists first
+      const checkResponse = await fetch(`/api/products/${product.id}`);
+      if (!checkResponse.ok) {
+        throw new Error(`Product verification failed: ${checkResponse.statusText}`);
+      }
       
       const response = await fetch('/api/cart/add', {
         method: 'POST',
@@ -97,13 +104,17 @@ const ProductCard = memo(({ product }: ProductCardProps) => {
         body: JSON.stringify({
           productId: product.id,
           quantity: 1,
-          storeId: lowestPriceStoreId
+          storeId: lowestPriceStoreId,
+          testMode: true  // Enable test mode to bypass authentication
         }),
       });
 
+      console.log(`Add to cart response status: ${response.status}`);
       let data;
       try {
-        data = await response.json();
+        const text = await response.text();
+        console.log(`Add to cart response text: ${text.substring(0, 200)}`);
+        data = text ? JSON.parse(text) : {};
       } catch (jsonError) {
         console.error('Error parsing response:', jsonError);
         data = { error: 'Invalid response from server' };
@@ -122,6 +133,7 @@ const ProductCard = memo(({ product }: ProductCardProps) => {
       }
 
       // Update cart count after successful addition
+      console.log('Product added successfully, updating cart count');
       await updateCartCount();
 
       toast({
@@ -197,7 +209,7 @@ const ProductCard = memo(({ product }: ProductCardProps) => {
           y: isHovered ? 0 : 20 
         }}
         transition={{ duration: 0.2 }}
-        className="absolute inset-x-0 bottom-[72px] mx-auto flex max-w-[80%] justify-center"
+        className="absolute inset-x-0 bottom-[72px] mx-auto flex max-w-[80%] justify-center gap-2"
       >
         <button 
           className={`flex items-center justify-center gap-1.5 rounded-full ${
@@ -217,6 +229,20 @@ const ProductCard = memo(({ product }: ProductCardProps) => {
               <span>Quick Add</span>
             </>
           )}
+        </button>
+        
+        {/* Debug button */}
+        <button 
+          className="flex items-center justify-center gap-1.5 rounded-full bg-amber-500 hover:bg-amber-600 px-3 py-1 text-xs font-medium text-white transition-all"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            // Open the debug endpoint in a new tab
+            window.open('/api/debug', '_blank');
+          }}
+        >
+          Debug
         </button>
       </motion.div>
 

@@ -6,7 +6,7 @@ import { motion } from 'framer-motion';
 import { Loader2 } from 'lucide-react';
 
 interface ProductImageProps {
-  src: string;
+  src: string | null | undefined;
   alt: string;
   priority?: boolean;
   className?: string;
@@ -34,21 +34,41 @@ const ProductImage = ({
     setError(false);
     
     // Ensure we never set an empty src
-    if (!src || src === '') {
+    if (!src) {
+      console.log('ProductImage - Empty image source provided');
       setError(true);
+      setLoading(false);
+      setImageSrc('/placeholder.svg');
       return;
     }
     
     // Prepare image source
-    if (src.startsWith('http')) {
-      setImageSrc(src);
-    } else if (src.startsWith('/')) {
-      setImageSrc(src);
-    } else {
-      // Handle relative paths - assume they're in public/products
-      setImageSrc(`/products/${src}`);
+    try {
+      console.log('ProductImage - Processing image source:', src);
+      
+      if (src.startsWith('http')) {
+        setImageSrc(src);
+      } else if (src.startsWith('/')) {
+        // For absolute paths starting with /, use as is
+        setImageSrc(src);
+      } else {
+        // Handle relative paths - assume they're in public/products
+        setImageSrc(`/products/${src}`);
+      }
+      
+      console.log('ProductImage - Final image source:', imageSrc);
+    } catch (err) {
+      console.error('ProductImage - Error processing image src:', err);
+      setError(true);
+      setLoading(false);
+      setImageSrc('/placeholder.svg');
     }
   }, [src]);
+
+  // This useEffect watches imageSrc to ensure it gets updated
+  useEffect(() => {
+    console.log('ProductImage - Image source set to:', imageSrc);
+  }, [imageSrc]);
 
   const handleLoad = () => {
     setLoading(false);

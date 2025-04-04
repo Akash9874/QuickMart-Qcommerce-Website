@@ -3,15 +3,15 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/app/lib/auth';
 import { prisma } from '@/app/lib/prisma';
 
-// Define the params properly for Next.js 15.2.4
-type RouteParams = { id: string };
-
-export async function GET(
-  request: NextRequest,
-  { params }: { params: RouteParams }
-) {
+// Workaround for Next.js 15 type issue with route parameters
+export async function GET(request: NextRequest) {
   try {
-    const orderId = parseInt(params.id);
+    // Extract orderId from URL path manually
+    const url = request.url;
+    const segments = url.split('/');
+    const idSegment = segments[segments.length - 1]; // Get the last segment
+    const orderId = parseInt(idSegment);
+    
     if (isNaN(orderId)) {
       return NextResponse.json(
         { error: 'Invalid order ID' },
@@ -19,18 +19,18 @@ export async function GET(
       );
     }
 
+    // Check authentication
     const session = await getServerSession(authOptions);
-    
-    if (!session || !session.user) {
+    if (!session?.user?.email) {
       return NextResponse.json(
         { error: 'Authentication required to access order details' },
         { status: 401 }
       );
     }
 
-    // Get user by email from session
+    // Find the user by email
     const user = await prisma.user.findUnique({
-      where: { email: session.user.email as string },
+      where: { email: session.user.email },
     });
 
     if (!user) {
@@ -40,11 +40,11 @@ export async function GET(
       );
     }
 
-    // Get order with items, ensuring it belongs to the authenticated user
-    const order = await prisma.order.findUnique({
+    // Get the order including items, making sure it belongs to the user
+    const order = await prisma.order.findFirst({
       where: {
         id: orderId,
-        userId: user.id, // Ensure the order belongs to the user
+        userId: user.id,
       },
       include: {
         items: true,
@@ -52,13 +52,12 @@ export async function GET(
     });
 
     if (!order) {
-      // Check if the order exists at all
+      // Check if the order exists but belongs to someone else
       const anyOrder = await prisma.order.findUnique({
         where: { id: orderId },
       });
 
       if (anyOrder) {
-        // Order exists but doesn't belong to this user
         return NextResponse.json(
           { error: 'You do not have permission to view this order' },
           { status: 403 }
@@ -71,38 +70,37 @@ export async function GET(
       );
     }
 
-    // Fetch product and store details for each order item
-    const orderWithDetails = {
-      ...order,
-      items: await Promise.all(
-        order.items.map(async (item) => {
-          const product = await prisma.product.findUnique({
-            where: { id: item.productId },
-            select: {
-              id: true,
-              name: true,
-              image: true,
-            },
-          });
+    // Fetch additional details for each order item
+    const enrichedItems = await Promise.all(
+      order.items.map(async (item) => {
+        // Get product details
+        const product = await prisma.product.findUnique({
+          where: { id: item.productId },
+          select: { id: true, name: true, image: true },
+        });
 
-          const store = await prisma.store.findUnique({
-            where: { id: item.storeId },
-            select: {
-              id: true,
-              name: true,
-            },
-          });
+        // Get store details
+        const store = await prisma.store.findUnique({
+          where: { id: item.storeId },
+          select: { id: true, name: true },
+        });
 
-          return {
-            ...item,
-            product,
-            store,
-          };
-        })
-      ),
-    };
+        return {
+          ...item,
+          product,
+          store,
+        };
+      })
+    );
 
-    return NextResponse.json({ order: orderWithDetails });
+    // Return the order with enriched items
+    return NextResponse.json({
+      order: {
+        ...order,
+        items: enrichedItems,
+      }
+    });
+    
   } catch (error) {
     console.error('Error fetching order details:', error);
     return NextResponse.json(

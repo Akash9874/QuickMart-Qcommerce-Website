@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import LoadingSpinner from '../../components/LoadingSpinner';
@@ -33,28 +33,37 @@ interface Order {
   items: OrderItem[];
 }
 
-export default function OrderDetails({ params }: { params: { id: string } }) {
+export default function OrderDetails() {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const params = useParams();
+  const orderId = typeof params?.id === 'string' ? params.id : '';
+  
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (!orderId) {
+      setError('Invalid order ID');
+      setLoading(false);
+      return;
+    }
+    
     if (status === 'unauthenticated') {
-      router.push('/login?callbackUrl=/orders/' + params.id);
+      router.push('/login?callbackUrl=/orders/' + orderId);
       return;
     }
 
     if (status === 'authenticated') {
       fetchOrderDetails();
     }
-  }, [status, router, params.id]);
+  }, [status, router, orderId]);
 
   const fetchOrderDetails = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`/api/orders/${params.id}`);
+      const response = await fetch(`/api/orders/${orderId}`);
       
       if (!response.ok) {
         if (response.status === 404) {
@@ -248,42 +257,13 @@ export default function OrderDetails({ params }: { params: { id: string } }) {
       </div>
       
       <div className="flex justify-between">
-        <div className="space-x-4">
-          <Link 
-            href="/orders" 
-            className="text-[#1A535C] hover:underline"
-          >
-            ← Back to Orders
-          </Link>
-          <Link 
-            href="/profile" 
-            className="text-[#1A535C] hover:underline"
-          >
-            View Profile
-          </Link>
-        </div>
+        <Link href="/orders" className="rounded-full bg-white px-6 py-2 text-[#1A535C] shadow-sm hover:bg-gray-50">
+          ← Back to Orders
+        </Link>
         
         {order.status === 'DELIVERED' && (
-          <button 
-            className="rounded-md bg-[#4ECDC4] px-4 py-2 text-white hover:bg-opacity-90"
-            onClick={() => {
-              // This would open a modal or redirect to a review page
-              alert('Review functionality would be implemented here');
-            }}
-          >
-            Write a Review
-          </button>
-        )}
-        
-        {order.status === 'PENDING' && (
-          <button 
-            className="rounded-md bg-red-500 px-4 py-2 text-white hover:bg-opacity-90"
-            onClick={() => {
-              // This would call an API to cancel the order
-              alert('Cancel order functionality would be implemented here');
-            }}
-          >
-            Cancel Order
+          <button className="rounded-full bg-[#1A535C] px-6 py-2 text-white hover:bg-[#1A535C]/90">
+            Leave a Review
           </button>
         )}
       </div>

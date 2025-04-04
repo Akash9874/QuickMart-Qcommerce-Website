@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import ProductCard from '@/app/components/ProductCard';
 import { Loader2, Search, Filter, ChevronDown, ChevronUp } from 'lucide-react';
@@ -101,7 +101,8 @@ const ProductSkeleton = () => (
   </div>
 );
 
-export default function ProductsPage() {
+// Create a separate component for product content that uses searchParams
+function ProductContent() {
   const searchParams = useSearchParams();
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -116,20 +117,20 @@ export default function ProductsPage() {
     // Simulate API fetch with delay
     const fetchProducts = async () => {
       setIsLoading(true);
-      
+
       // Simulate network delay
       await new Promise(resolve => setTimeout(resolve, 1000));
-      
+
       // Apply any filters from URL
       const category = searchParams.get('category') || 'All';
       if (category !== 'All') {
         setActiveCategory(category);
       }
-      
+
       setProducts(PRODUCTS);
       setIsLoading(false);
     };
-    
+
     fetchProducts();
   }, [searchParams]);
 
@@ -139,26 +140,26 @@ export default function ProductsPage() {
     const matchesSearch = searchQuery.trim() === '' ||
       product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       product.description.toLowerCase().includes(searchQuery.toLowerCase());
-    
+
     // Category filter - mock implementation, would connect to real categories
     const matchesCategory = activeCategory === 'All' || true;
-    
+
     // Store filter
-    const matchesStore = activeStore === '' || 
+    const matchesStore = activeStore === '' ||
       product.prices.some(price => price.store === activeStore);
-    
+
     // Price filter
     const lowestPrice = Math.min(...product.prices.map(p => p.amount));
     const matchesPrice = lowestPrice >= priceRange[0] && lowestPrice <= priceRange[1];
-    
+
     return matchesSearch && matchesCategory && matchesStore && matchesPrice;
   });
-  
+
   // Sort products
   const sortedProducts = [...filteredProducts].sort((a, b) => {
     const aLowestPrice = Math.min(...a.prices.map(p => p.amount));
     const bLowestPrice = Math.min(...b.prices.map(p => p.amount));
-    
+
     if (activeSort === 'Price: Low to High') {
       return aLowestPrice - bLowestPrice;
     } else if (activeSort === 'Price: High to Low') {
@@ -179,7 +180,7 @@ export default function ProductsPage() {
           Find the freshest groceries at the best prices from multiple stores
         </p>
       </div>
-      
+
       {/* Search and Filters Section */}
       <div className="mx-auto mb-8 max-w-7xl">
         <div className="mb-4 flex flex-col gap-4 rounded-lg bg-white p-4 shadow-sm sm:flex-row sm:items-center">
@@ -195,7 +196,7 @@ export default function ProductsPage() {
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
-          
+
           <div className="flex items-center gap-2">
             <button
               onClick={() => setFiltersOpen(!filtersOpen)}
@@ -205,7 +206,7 @@ export default function ProductsPage() {
               Filters
               {filtersOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
             </button>
-            
+
             <select
               className="rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium hover:bg-gray-50"
               value={activeSort}
@@ -217,7 +218,7 @@ export default function ProductsPage() {
             </select>
           </div>
         </div>
-        
+
         {/* Expandable Filters */}
         <AnimatePresence>
           {filtersOpen && (
@@ -237,11 +238,10 @@ export default function ProductsPage() {
                       {categories.map(category => (
                         <button
                           key={category}
-                          className={`rounded-full px-3 py-1 text-sm ${
-                            activeCategory === category
+                          className={`rounded-full px-3 py-1 text-sm ${activeCategory === category
                               ? 'bg-primary text-white'
                               : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                          }`}
+                            }`}
                           onClick={() => setActiveCategory(category)}
                         >
                           {category}
@@ -249,17 +249,16 @@ export default function ProductsPage() {
                       ))}
                     </div>
                   </div>
-                  
+
                   {/* Stores */}
                   <div>
                     <h3 className="mb-3 font-medium text-gray-900">Stores</h3>
                     <div className="flex flex-wrap gap-2">
                       <button
-                        className={`rounded-full px-3 py-1 text-sm ${
-                          activeStore === ''
+                        className={`rounded-full px-3 py-1 text-sm ${activeStore === ''
                             ? 'bg-primary text-white'
                             : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                        }`}
+                          }`}
                         onClick={() => setActiveStore('')}
                       >
                         All Stores
@@ -267,11 +266,10 @@ export default function ProductsPage() {
                       {stores.map(store => (
                         <button
                           key={store}
-                          className={`rounded-full px-3 py-1 text-sm ${
-                            activeStore === store
+                          className={`rounded-full px-3 py-1 text-sm ${activeStore === store
                               ? 'bg-primary text-white'
                               : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                          }`}
+                            }`}
                           onClick={() => setActiveStore(store)}
                         >
                           {store}
@@ -279,11 +277,22 @@ export default function ProductsPage() {
                       ))}
                     </div>
                   </div>
-                  
+
                   {/* Price Range */}
                   <div>
                     <h3 className="mb-3 font-medium text-gray-900">Price Range</h3>
-                    <div className="px-2">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm text-gray-500">${priceRange[0].toFixed(2)}</span>
+                      <input
+                        type="range"
+                        min="0"
+                        max="10"
+                        step="0.5"
+                        value={priceRange[0]}
+                        onChange={(e) => setPriceRange([parseFloat(e.target.value), priceRange[1]])}
+                        className="h-2 w-full cursor-pointer appearance-none rounded-lg bg-gray-200"
+                      />
+                      <span className="text-sm text-gray-500">${priceRange[1].toFixed(2)}</span>
                       <input
                         type="range"
                         min="0"
@@ -291,40 +300,53 @@ export default function ProductsPage() {
                         step="0.5"
                         value={priceRange[1]}
                         onChange={(e) => setPriceRange([priceRange[0], parseFloat(e.target.value)])}
-                        className="w-full"
+                        className="h-2 w-full cursor-pointer appearance-none rounded-lg bg-gray-200"
                       />
-                      <div className="mt-2 flex justify-between text-sm text-gray-500">
-                        <span>${priceRange[0].toFixed(2)}</span>
-                        <span>${priceRange[1].toFixed(2)}</span>
-                      </div>
                     </div>
                   </div>
+                </div>
+
+                <div className="flex justify-between">
+                  <button
+                    className="text-sm text-gray-500 hover:text-gray-700"
+                    onClick={() => {
+                      setActiveCategory('All');
+                      setActiveStore('');
+                      setPriceRange([0, 10]);
+                    }}
+                  >
+                    Reset Filters
+                  </button>
+
+                  <button
+                    className="rounded bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary/90"
+                    onClick={() => setFiltersOpen(false)}
+                  >
+                    Apply Filters
+                  </button>
                 </div>
               </div>
             </motion.div>
           )}
         </AnimatePresence>
       </div>
-      
-      {/* Products Grid */}
+
+      {/* Product Grid */}
       <div className="mx-auto max-w-7xl">
         {isLoading ? (
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-            {Array.from({ length: 8 }).map((_, index) => (
+            {[...Array(8)].map((_, index) => (
               <ProductSkeleton key={index} />
             ))}
           </div>
-        ) : sortedProducts.length > 0 ? (
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-            {sortedProducts.map(product => (
-              <ProductCard key={product.id} product={product} />
-            ))}
-          </div>
-        ) : (
-          <div className="py-12 text-center">
-            <p className="text-lg text-gray-600">No products match your filters.</p>
+        ) : sortedProducts.length === 0 ? (
+          <div className="rounded-lg bg-white p-8 text-center shadow-sm">
+            <h2 className="mb-2 text-xl font-semibold">No products found</h2>
+            <p className="text-gray-600">
+              Try adjusting your filters or search query to find what you're looking for.
+            </p>
             <button
-              className="mt-4 rounded-lg bg-primary px-4 py-2 text-white hover:bg-primary/90"
+              className="mt-4 rounded-full bg-primary px-4 py-2 text-white hover:bg-primary/90"
               onClick={() => {
                 setSearchQuery('');
                 setActiveCategory('All');
@@ -332,11 +354,30 @@ export default function ProductsPage() {
                 setPriceRange([0, 10]);
               }}
             >
-              Clear All Filters
+              Reset All Filters
             </button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+            {sortedProducts.map(product => (
+              <ProductCard key={product.id} product={product} />
+            ))}
           </div>
         )}
       </div>
     </div>
+  );
+}
+
+// Main component that wraps ProductContent in a Suspense boundary
+export default function ProductsPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex min-h-screen items-center justify-center">
+        <Loader2 className="h-10 w-10 animate-spin text-primary" />
+      </div>
+    }>
+      <ProductContent />
+    </Suspense>
   );
 } 
