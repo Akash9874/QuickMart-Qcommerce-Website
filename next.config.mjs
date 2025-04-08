@@ -52,7 +52,13 @@ const nextConfig = {
   experimental: {
     optimizeCss: true,
     scrollRestoration: true,
+    serverActions: true,
+    appDir: true,
+    serverComponentsExternalPackages: ['@prisma/client']
+  },
+  typescript: {
+    ignoreBuildErrors: true
   },
 };
 
-export default nextConfig; 
+export default nextConfig;

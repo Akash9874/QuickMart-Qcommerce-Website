@@ -8,10 +8,15 @@ import { Card } from '@/components/ui/card';
 import { useToast } from '@/components/ui/use-toast';
 import ProductImage from '@/app/components/ProductImage';
 import { useCart } from '@/app/context/CartContext';
+import { getCart as getCartFromStorage, addToCart as addToCartInStorage, updateCartItemQuantity, removeCartItem } from '@/app/lib/cart';
+import { mockProducts, mockPrices, mockStores } from '@/app/lib/mockData';
+import Link from 'next/link';
 
 interface CartItem {
-  id: string;
-  productId: string;
+  id: number;
+  productId: number;
+  storeId: number;
+  quantity: number;
   product: {
     id: string;
     name: string;
@@ -23,11 +28,9 @@ interface CartItem {
       name?: string;
     };
   };
-  quantity: number;
 }
 
 interface Cart {
-  id?: string;
   items: CartItem[];
   total: number;
 }
@@ -42,56 +45,89 @@ export default function CartPage() {
   const [isUpdating, setIsUpdating] = useState(false);
 
   useEffect(() => {
-    fetchCart();
+    fetchCartFromStorage();
   }, []);
 
-  const fetchCart = async () => {
+  const fetchCartFromStorage = () => {
     try {
       setIsLoading(true);
-      const response = await fetch('/api/cart');
-      if (!response.ok) {
-        throw new Error('Failed to fetch cart');
-      }
-      const data = await response.json();
-      console.log('Cart data:', data);
       
-      // Debug image paths in cart items
-      if (data.items && data.items.length > 0) {
-        data.items.forEach((item: any) => {
-          console.log(`Cart item ${item.id}: Product: ${item.product.name}, Image path: ${item.product.image}`);
-        });
+      // Get cart from localStorage
+      const cartItems = getCartFromStorage();
+      console.log('Cart items from localStorage:', cartItems);
+      
+      if (!cartItems || cartItems.length === 0) {
+        setCart({ items: [], total: 0 });
+        setIsLoading(false);
+        return;
       }
       
-      setCart(data);
+      // Format cart items for display
+      const formattedItems = cartItems.map(item => {
+        // Get product details
+        const product = mockProducts.find(p => p.id === item.productId) || 
+          (item.product || { name: 'Unknown Product', description: '', image: null });
+        
+        // Get price details
+        const price = mockPrices.find(p => p.productId === item.productId && p.storeId === item.storeId) || 
+          (item.price || { amount: 0 });
+          
+        // Get store details
+        const store = mockStores.find(s => s.id === item.storeId) || { id: item.storeId, name: 'Unknown Store' };
+        
+        // Calculate subtotal
+        const priceAmount = price.amount || 0;
+        
+        return {
+          id: item.id,
+          productId: item.productId,
+          storeId: item.storeId,
+          quantity: item.quantity,
+          product: {
+            id: item.productId.toString(),
+            name: product.name || 'Unknown Product',
+            description: product.description || '',
+            image: product.image || null,
+            price: priceAmount,
+            store: {
+              id: store.id.toString(),
+              name: store.name
+            }
+          }
+        };
+      });
+      
+      // Calculate total
+      const total = formattedItems.reduce(
+        (sum, item) => sum + (item.product.price * item.quantity),
+        0
+      );
+      
+      setCart({ 
+        items: formattedItems, 
+        total 
+      });
+      
+      console.log('Formatted cart:', { items: formattedItems, total });
     } catch (err) {
-      console.error('Error fetching cart:', err);
-      setError('Failed to load cart. Please try again.');
+      console.error('Error fetching cart from localStorage:', err);
+      setError('Failed to load cart. Please refresh the page.');
     } finally {
       setIsLoading(false);
     }
   };
 
-  const updateQuantity = async (itemId: string, newQuantity: number) => {
-    if (newQuantity < 1) return;
+  const updateQuantity = async (itemId: number, newQuantity: number) => {
+    if (newQuantity < 1 || !cart) return;
     
     try {
       setIsUpdating(true);
-      const response = await fetch('/api/cart/update', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          itemId,
-          quantity: newQuantity,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to update quantity');
-      }
-
-      await fetchCart();
+      
+      // Update item quantity using the cart library function
+      updateCartItemQuantity(itemId, newQuantity);
+      
+      // Refresh cart display
+      fetchCartFromStorage();
       await updateCartCount();
       
       toast({
@@ -111,22 +147,17 @@ export default function CartPage() {
     }
   };
 
-  const removeItem = async (itemId: string) => {
+  const removeItem = async (itemId: number) => {
+    if (!cart) return;
+    
     try {
       setIsUpdating(true);
-      const response = await fetch('/api/cart/remove', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ itemId }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to remove item');
-      }
-
-      await fetchCart();
+      
+      // Remove item using the cart library function
+      removeCartItem(itemId);
+      
+      // Refresh cart display
+      fetchCartFromStorage();
       await updateCartCount();
       
       toast({
@@ -149,16 +180,30 @@ export default function CartPage() {
   const createTestCart = async () => {
     try {
       setIsLoading(true);
-      const response = await fetch('/api/cart/create-test');
-      if (!response.ok) {
-        throw new Error('Failed to create test cart');
+      
+      // Create test cart with mock products
+      const testProducts = [
+        { productId: 1, storeId: 3, quantity: 2 }, // Organic Bananas from ValuGrocer
+        { productId: 2, storeId: 1, quantity: 1 }, // Whole Milk from FreshMart
+        { productId: 4, storeId: 2, quantity: 3 }  // Eggs from QuickStop
+      ];
+      
+      // Add each item to cart
+      const cartItems = [];
+      for (const item of testProducts) {
+        const cartItem = addToCartInStorage(item.productId, item.storeId, item.quantity);
+        if (cartItem) {
+          cartItems.push(cartItem);
+        }
       }
-      const data = await response.json();
-      console.log('Test cart created:', data);
-      await fetchCart();
+      
+      // Refresh cart display
+      fetchCartFromStorage();
+      await updateCartCount();
+      
       toast({
         title: 'Test cart created',
-        description: 'A test cart has been created successfully.',
+        description: 'A test cart has been created with sample products.',
       });
     } catch (err) {
       console.error('Error creating test cart:', err);
@@ -190,7 +235,7 @@ export default function CartPage() {
       <div className="container mx-auto px-4 py-8">
         <div className="flex flex-col items-center justify-center min-h-[400px] gap-4">
           <p className="text-destructive">{error}</p>
-          <Button onClick={fetchCart}>Try Again</Button>
+          <Button onClick={fetchCartFromStorage}>Try Again</Button>
         </div>
       </div>
     );
@@ -207,11 +252,8 @@ export default function CartPage() {
               Looks like you haven't added any items to your cart yet.
             </p>
             <div className="flex gap-4">
-              <Button onClick={() => router.push('/products')}>
+              <Button onClick={() => router.push('/products')} className="w-full">
                 Browse Products
-              </Button>
-              <Button variant="outline" onClick={createTestCart}>
-                Create Test Cart
               </Button>
             </div>
           </div>
@@ -222,11 +264,8 @@ export default function CartPage() {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <div className="flex justify-between items-center mb-8">
+      <div className="mb-8">
         <h1 className="text-3xl font-bold">Shopping Cart</h1>
-        <Button variant="outline" onClick={createTestCart}>
-          Create Test Cart
-        </Button>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -236,14 +275,12 @@ export default function CartPage() {
               <div className="flex gap-4">
                 <div className="relative w-24 h-24 flex-shrink-0">
                   {item.product.image ? (
-                    <img 
+                    <ProductImage 
                       src={item.product.image}
                       alt={item.product.name}
                       className="w-full h-full object-cover rounded-lg"
-                      onError={(e) => {
-                        console.error(`Error loading image: ${item.product.image}`);
-                        e.currentTarget.src = '/placeholder.svg';
-                      }}
+                      width={96}
+                      height={96}
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center bg-gray-100 rounded-lg">
@@ -320,9 +357,12 @@ export default function CartPage() {
                 </div>
               </div>
             </div>
-            <Button className="w-full mt-6" onClick={() => router.push('/checkout')}>
+            <Link 
+              href="/checkout"
+              className="w-full mt-6 bg-[#FF6B6B] hover:bg-[#FF6B6B]/90 text-white py-3 px-4 rounded-md font-medium text-sm transition-colors block text-center"
+            >
               Proceed to Checkout
-            </Button>
+            </Link>
           </Card>
         </div>
       </div>

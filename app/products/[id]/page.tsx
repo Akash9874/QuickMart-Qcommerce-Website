@@ -8,6 +8,7 @@ import { Loader2 } from 'lucide-react';
 import ProductImage from '@/app/components/ProductImage';
 import Link from 'next/link';
 import { useCart } from '@/app/context/CartContext';
+import { useCartActions } from '@/app/hooks/useCartActions';
 
 interface Store {
   id: number;
@@ -33,6 +34,7 @@ export default function ProductDetailPage() {
   const router = useRouter();
   const { toast } = useToast();
   const { updateCartCount } = useCart();
+  const { addToCart, isAddingToCart } = useCartActions();
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -70,7 +72,7 @@ export default function ProductDetailPage() {
     fetchProduct();
   }, [params.id]);
 
-  const addToCart = async () => {
+  const handleAddToCart = async () => {
     try {
       if (!product || selectedStore === null) {
         toast({
@@ -82,57 +84,9 @@ export default function ProductDetailPage() {
       }
       
       console.log(`Adding product ${product.id} from store ${selectedStore} to cart, quantity: ${quantity}`);
-      
-      const response = await fetch('/api/cart/add', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          productId: product.id,
-          quantity: quantity,
-          storeId: selectedStore,
-          testMode: true // Enable test mode to bypass authentication
-        }),
-      });
-
-      console.log(`Add to cart response status: ${response.status}`);
-      let data;
-      try {
-        const text = await response.text();
-        console.log(`Add to cart response text: ${text.substring(0, 200)}`);
-        data = text ? JSON.parse(text) : {};
-      } catch (jsonError) {
-        console.error('Error parsing response:', jsonError);
-        data = { error: 'Invalid response from server' };
-      }
-      
-      if (!response.ok) {
-        console.error('Error response:', data);
-        toast({
-          title: 'Error',
-          description: data?.error || 'Failed to add product to cart',
-          variant: 'destructive',
-        });
-        return;
-      }
-
-      // Update cart count after successful addition
-      console.log('Product added successfully, updating cart count');
-      await updateCartCount();
-
-      toast({
-        title: 'Success',
-        description: 'Product added to cart',
-        variant: 'success',
-      });
-    } catch (err: any) {
-      console.error('Error adding to cart:', err);
-      toast({
-        title: 'Error',
-        description: err.message || 'Failed to add product to cart',
-        variant: 'destructive',
-      });
+      await addToCart(product.id, selectedStore, quantity);
+    } catch (err) {
+      // Error handling is done inside the hook
     }
   };
 
@@ -259,91 +213,26 @@ export default function ProductDetailPage() {
             </div>
             
             <Button 
-              onClick={addToCart} 
-              disabled={!selectedStore}
+              onClick={handleAddToCart} 
+              disabled={!selectedStore || isAddingToCart}
               className="px-6"
             >
-              Add to Cart
-              {selectedPrice && (
-                <span className="ml-2">
-                  (${(selectedPrice.amount * quantity).toFixed(2)})
-                </span>
+              {isAddingToCart ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Adding...
+                </>
+              ) : (
+                <>
+                  Add to Cart
+                  {selectedPrice && (
+                    <span className="ml-2">
+                      (${(selectedPrice.amount * quantity).toFixed(2)})
+                    </span>
+                  )}
+                </>
               )}
             </Button>
-          </div>
-          
-          {/* Debug Panel */}
-          <div className="mt-8 p-4 border rounded-lg bg-gray-50">
-            <h3 className="text-sm font-semibold mb-2 flex items-center">
-              <span className="mr-2">Debug Tools</span>
-              <span className="text-xs px-2 py-0.5 bg-amber-100 text-amber-800 rounded-full">Developer Only</span>
-            </h3>
-            <div className="grid grid-cols-2 gap-2">
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => window.open('/api/auth-test', '_blank')}
-                className="text-xs"
-              >
-                Check Auth
-              </Button>
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => window.open('/api/test', '_blank')}
-                className="text-xs"
-              >
-                Test API
-              </Button>
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => {
-                  const url = `/api/cart/add`;
-                  const data = {
-                    productId: product.id,
-                    quantity: 1,
-                    storeId: selectedStore || 1,
-                    testMode: true
-                  };
-                  
-                  fetch(url, {
-                    method: 'POST',
-                    headers: {
-                      'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(data),
-                  })
-                  .then(response => response.text())
-                  .then(text => {
-                    console.log('Direct cart add response:', text);
-                    toast({
-                      title: 'Debug Info',
-                      description: `Response: ${text.substring(0, 50)}...`,
-                    });
-                  })
-                  .catch(err => {
-                    console.error('Error in direct add:', err);
-                    toast({
-                      title: 'Error',
-                      description: err.message,
-                      variant: 'destructive',
-                    });
-                  });
-                }}
-                className="text-xs"
-              >
-                Direct Add (Test Mode)
-              </Button>
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => window.open(`/api/cart?testMode=true`, '_blank')}
-                className="text-xs"
-              >
-                View Cart (Test Mode)
-              </Button>
-            </div>
           </div>
         </div>
       </div>

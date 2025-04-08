@@ -6,8 +6,7 @@ import { Heart, ShoppingBag, Star } from 'lucide-react';
 import { motion } from 'framer-motion';
 import ProductImage from './ProductImage';
 import { formatCurrency } from '@/app/lib/utils';
-import { useToast } from '@/components/ui/use-toast';
-import { useCart } from '../context/CartContext';
+import { useCartActions } from '@/app/hooks/useCartActions';
 
 interface Store {
   id: number;
@@ -36,9 +35,7 @@ interface ProductCardProps {
 const ProductCard = memo(({ product }: ProductCardProps) => {
   const [isHovered, setIsHovered] = useState(false);
   const [isFavorite, setIsFavorite] = useState(false);
-  const [isAddingToCart, setIsAddingToCart] = useState(false);
-  const { toast } = useToast();
-  const { updateCartCount } = useCart();
+  const { addToCart, isAddingToCart } = useCartActions();
 
   // Find the lowest and highest price
   const { lowestPrice, highestPrice, storeName, lowestPriceStoreId } = product.prices.reduce(
@@ -79,77 +76,15 @@ const ProductCard = memo(({ product }: ProductCardProps) => {
     ? Math.round(((highestPrice - lowestPrice) / highestPrice) * 100)
     : 0;
 
-  // Function to add product to cart
-  const addToCart = async (e: React.MouseEvent) => {
+  // Handler for adding product to cart
+  const handleAddToCart = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     
-    if (isAddingToCart) return;
-    
     try {
-      setIsAddingToCart(true);
-      console.log(`Adding product ${product.id} from store ${lowestPriceStoreId} to cart`);
-      
-      // Verify the product exists first
-      const checkResponse = await fetch(`/api/products/${product.id}`);
-      if (!checkResponse.ok) {
-        throw new Error(`Product verification failed: ${checkResponse.statusText}`);
-      }
-      
-      const response = await fetch('/api/cart/add', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          productId: product.id,
-          quantity: 1,
-          storeId: lowestPriceStoreId,
-          testMode: true  // Enable test mode to bypass authentication
-        }),
-      });
-
-      console.log(`Add to cart response status: ${response.status}`);
-      let data;
-      try {
-        const text = await response.text();
-        console.log(`Add to cart response text: ${text.substring(0, 200)}`);
-        data = text ? JSON.parse(text) : {};
-      } catch (jsonError) {
-        console.error('Error parsing response:', jsonError);
-        data = { error: 'Invalid response from server' };
-      }
-      
-      if (!response.ok) {
-        // Safe way to log data
-        console.error('Error response:', JSON.stringify(data || {}));
-        
-        toast({
-          title: 'Error',
-          description: (data && data.error) ? data.error : 'Failed to add product to cart',
-          variant: 'destructive',
-        });
-        return;
-      }
-
-      // Update cart count after successful addition
-      console.log('Product added successfully, updating cart count');
-      await updateCartCount();
-
-      toast({
-        title: 'Success',
-        description: 'Product added to cart',
-        variant: 'success',
-      });
-    } catch (err: any) {
-      console.error('Error adding to cart:', err);
-      toast({
-        title: 'Error',
-        description: err.message || 'Failed to add product to cart',
-        variant: 'destructive',
-      });
-    } finally {
-      setIsAddingToCart(false);
+      await addToCart(product.id, lowestPriceStoreId, 1);
+    } catch (error) {
+      // Error handling is done inside the hook
     }
   };
 
@@ -214,8 +149,8 @@ const ProductCard = memo(({ product }: ProductCardProps) => {
         <button 
           className={`flex items-center justify-center gap-1.5 rounded-full ${
             isAddingToCart ? 'bg-gray-400' : 'bg-primary hover:bg-primary/90'
-          } px-4 py-2 text-sm font-medium text-white transition-all`}
-          onClick={addToCart}
+          } px-4 py-2 text-sm font-medium text-white transition-all w-full`}
+          onClick={handleAddToCart}
           disabled={isAddingToCart}
         >
           {isAddingToCart ? (
@@ -229,20 +164,6 @@ const ProductCard = memo(({ product }: ProductCardProps) => {
               <span>Quick Add</span>
             </>
           )}
-        </button>
-        
-        {/* Debug button */}
-        <button 
-          className="flex items-center justify-center gap-1.5 rounded-full bg-amber-500 hover:bg-amber-600 px-3 py-1 text-xs font-medium text-white transition-all"
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            
-            // Open the debug endpoint in a new tab
-            window.open('/api/debug', '_blank');
-          }}
-        >
-          Debug
         </button>
       </motion.div>
 

@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
+import { getCart } from '@/app/lib/cart';
 
 interface CartContextType {
   cartItemsCount: number;
@@ -39,9 +40,39 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
         return;
       }
       
-      // Try to fetch cart data even without authentication (for test mode)
-      console.log("CartContext: Fetching cart data with test mode");
-      const response = await fetch('/api/cart?testMode=true');
+      // First, try to get cart data from localStorage
+      const localCart = getCart();
+      if (localCart && localCart.length > 0) {
+        console.log(`CartContext: Found ${localCart.length} items in localStorage`);
+        
+        // Calculate total quantity from localStorage cart
+        const totalItems = localCart.reduce((total, item) => {
+          return total + (item.quantity || 0);
+        }, 0);
+        
+        console.log(`CartContext: Setting cart count to ${totalItems} items from localStorage`);
+        setCartItemsCount(totalItems);
+        setIsLoading(false);
+        return;
+      }
+      
+      // If no localStorage cart, try to fetch from server (for backward compatibility)
+      console.log("CartContext: No localStorage cart, fetching from server with test mode");
+      
+      // Get cart data from localStorage to pass to the API
+      const cartData = typeof window !== 'undefined' ? localStorage.getItem('quickmart_cart') : null;
+      const headers: HeadersInit = {
+        'Content-Type': 'application/json'
+      };
+      
+      // Add cart data to headers if available
+      if (cartData) {
+        headers['x-cart-data'] = cartData;
+      }
+      
+      const response = await fetch('/api/cart?testMode=true', {
+        headers
+      });
       
       if (!response.ok) {
         console.error("CartContext: Error fetching cart, status:", response.status);
@@ -67,7 +98,7 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
           return total + (item.quantity || 0);
         }, 0);
         
-        console.log(`CartContext: Setting cart count to ${totalItems} items`);
+        console.log(`CartContext: Setting cart count to ${totalItems} items from API`);
         setCartItemsCount(totalItems);
       } else {
         console.log("CartContext: No cart items found, setting count to 0");

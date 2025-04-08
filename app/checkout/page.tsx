@@ -9,6 +9,8 @@ import { Loader2, CreditCard, Check, Lock } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useCart } from '@/app/context/CartContext';
+import { getCart as getCartFromStorage } from '@/app/lib/cart';
+import { mockProducts, mockPrices, mockStores } from '@/app/lib/mockData';
 
 interface CartItem {
   id: string;
@@ -67,6 +69,62 @@ export default function CheckoutPage() {
   const fetchCart = async () => {
     try {
       setIsLoading(true);
+      
+      // First try to get cart from localStorage
+      const cartItems = getCartFromStorage();
+      
+      if (cartItems && cartItems.length > 0) {
+        console.log('Checkout: Using cart data from localStorage:', cartItems);
+        
+        // Format cart items for display (similar to the formatting in cart page)
+        const formattedItems = cartItems.map(item => {
+          // Get product details
+          const product = mockProducts.find(p => p.id === item.productId) || 
+            (item.product || { name: 'Unknown Product', description: '', image: null });
+          
+          // Get price details
+          const price = mockPrices.find(p => p.productId === item.productId && p.storeId === item.storeId) || 
+            (item.price || { amount: 0 });
+            
+          // Get store details
+          const store = mockStores.find(s => s.id === item.storeId) || { id: item.storeId, name: 'Unknown Store' };
+          
+          // Calculate subtotal
+          const priceAmount = price.amount || 0;
+          
+          return {
+            id: item.id.toString(),
+            productId: item.productId.toString(),
+            quantity: item.quantity,
+            product: {
+              id: item.productId.toString(),
+              name: product.name || 'Unknown Product',
+              description: product.description || '',
+              image: product.image || null,
+              price: priceAmount,
+              store: {
+                id: store.id.toString(),
+                name: store.name
+              }
+            },
+          };
+        });
+        
+        // Calculate total
+        const total = formattedItems.reduce(
+          (sum, item) => sum + (item.product.price * item.quantity),
+          0
+        );
+        
+        setCart({ 
+          items: formattedItems, 
+          total 
+        });
+        setIsLoading(false);
+        return;
+      }
+      
+      // If no localStorage cart, try the API
       const response = await fetch('/api/cart');
       if (!response.ok) {
         throw new Error('Failed to fetch cart');

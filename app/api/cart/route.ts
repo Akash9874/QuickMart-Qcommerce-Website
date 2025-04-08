@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/app/lib/auth';
 import { prisma } from '@/app/lib/prisma';
 import { mockProducts, mockPrices, mockStores } from '@/app/lib/mockData';
+import { getCart as getClientCart } from '@/app/lib/cart';
 
 // Create mock cart data that doesn't rely on database
 const createMockCartData = () => {
@@ -77,6 +78,62 @@ const createMockCartData = () => {
   return { cartItems: formattedItems, totalAmount };
 };
 
+// Format cart items for the API response
+const formatCartItems = (cartItems: any[]) => {
+  // Create product and price lookup maps
+  const productMap = new Map();
+  mockProducts.forEach(product => {
+    productMap.set(product.id, product);
+  });
+  
+  // Create a price lookup map from mockPrices
+  const priceMap = new Map();
+  mockPrices.forEach(price => {
+    const key = `${price.productId}-${price.storeId}`;
+    const store = mockStores.find(s => s.id === price.storeId);
+    priceMap.set(key, {
+      amount: price.amount,
+      store: store || { id: price.storeId, name: 'Unknown Store' }
+    });
+  });
+  
+  // Format the cart items for the response
+  const formattedItems = cartItems.map(item => {
+    const product = productMap.get(item.productId) || item.product;
+    const priceKey = `${item.productId}-${item.storeId}`;
+    const priceData = priceMap.get(priceKey) || { amount: item.price?.amount || 0 };
+    
+    const priceAmount = priceData.amount;
+    const store = priceData.store || item.product?.store || { id: item.storeId, name: 'Unknown Store' };
+    
+    return {
+      id: item.id,
+      quantity: item.quantity,
+      product: {
+        id: item.productId.toString(),
+        name: product?.name || 'Unknown Product',
+        description: product?.description || '',
+        image: product?.image || null,
+        price: priceAmount,
+        store: {
+          id: typeof store.id === 'number' ? store.id.toString() : store.id,
+          name: store.name
+        }
+      },
+      storeId: item.storeId,
+      subtotal: priceAmount * item.quantity
+    };
+  });
+  
+  // Calculate total amount
+  const totalAmount = formattedItems.reduce(
+    (sum, item) => sum + item.subtotal,
+    0
+  );
+  
+  return { formattedItems, totalAmount };
+};
+
 export async function GET(request: NextRequest) {
   try {
     console.log('Cart API - Request received');
@@ -84,6 +141,24 @@ export async function GET(request: NextRequest) {
     // Check for test mode
     const testMode = request.nextUrl.searchParams.get('testMode') === 'true';
     console.log(`Cart API - Test mode: ${testMode}`);
+    
+    // Check for client-passed cart data
+    const clientCart = request.headers.get('x-cart-data');
+    if (clientCart) {
+      try {
+        const cartItems = JSON.parse(clientCart);
+        console.log(`Cart API - Using client-provided cart data with ${cartItems.length} items`);
+        const { formattedItems, totalAmount } = formatCartItems(cartItems);
+        
+        return NextResponse.json({
+          items: formattedItems,
+          total: totalAmount
+        });
+      } catch (error) {
+        console.error('Cart API - Error parsing client cart data:', error);
+        // Continue with server-side cart handling
+      }
+    }
     
     try {
       let userId: number | undefined;
