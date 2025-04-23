@@ -1,11 +1,7 @@
 {
   "version": 2,
-  "builds": [
-    {
-      "src": "package.json",
-      "use": "@vercel/next"
-    }
-  ],
+  "buildCommand": "npm run build",
+  "installCommand": "npm install",
   "routes": [
     {
       "src": "/(.*)",
@@ -15,9 +11,8 @@
   "github": {
     "silent": true
   },
-  "functions": {
-    "api/**": {
-      "memory": 1024
-    }
+  "env": {
+    "POSTGRES_PRISMA_URL": "DATABASE_URL",
+    "POSTGRES_URL_NON_POOLING": "DATABASE_URL"
   }
 } 

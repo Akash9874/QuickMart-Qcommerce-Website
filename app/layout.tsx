@@ -31,10 +31,11 @@ export default function RootLayout({
     <html lang="en" className={`${inter.className} ${montserrat.variable}`}>
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <link rel="preload" href="/placeholder.svg" as="image" />
-        <link rel="preload" href="/placeholder.jpg" as="image" />
         <link rel="dns-prefetch" href="https://fonts.googleapis.com" />
         <link rel="dns-prefetch" href="https://fonts.gstatic.com" />
+        
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
       </head>
       <body className="min-h-screen bg-gray-50">
         <Providers>

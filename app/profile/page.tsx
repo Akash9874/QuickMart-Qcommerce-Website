@@ -56,21 +56,45 @@ export default function ProfilePage() {
   const fetchProfile = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/profile');
+      console.log('Fetching profile data...');
+      
+      const response = await fetch('/api/profile', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        cache: 'no-store',
+        credentials: 'same-origin'
+      });
+      
+      console.log('Profile response status:', response.status);
       
       if (!response.ok) {
-        throw new Error('Failed to fetch profile');
+        // Try to parse error message
+        try {
+          const errorData = await response.json();
+          throw new Error(errorData.error || `Failed to fetch profile: ${response.status}`);
+        } catch (e) {
+          throw new Error(`Failed to fetch profile: ${response.status}`);
+        }
       }
       
       const data = await response.json();
+      console.log('Profile data received:', !!data.profile);
+      
+      if (!data.profile) {
+        throw new Error('No profile data found in response');
+      }
+      
       setProfile(data.profile);
       setFormData({
         name: data.profile.name || '',
         address: data.profile.address || '',
       });
     } catch (err) {
+      console.error('Error in fetchProfile:', err);
       setError('Error loading profile data');
-      console.error(err);
     } finally {
       setLoading(false);
     }
@@ -88,19 +112,32 @@ export default function ProfilePage() {
     e.preventDefault();
     
     try {
+      console.log('Submitting profile update...');
       const response = await fetch('/api/profile/update', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
+          'Accept': 'application/json'
         },
         body: JSON.stringify(formData),
+        credentials: 'same-origin',
+        cache: 'no-store'
       });
 
+      console.log('Profile update response status:', response.status);
+
       if (!response.ok) {
-        throw new Error('Failed to update profile');
+        try {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Failed to update profile');
+        } catch (e) {
+          throw new Error(`Failed to update profile: ${response.status}`);
+        }
       }
       
       const data = await response.json();
+      console.log('Profile update successful:', data);
+      
       setProfile(prev => ({
         ...(prev as UserProfile),
         name: formData.name,
@@ -109,8 +146,8 @@ export default function ProfilePage() {
       
       setEditMode(false);
     } catch (err) {
+      console.error('Error updating profile:', err);
       setError('Error updating profile');
-      console.error(err);
     }
   };
 

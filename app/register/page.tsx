@@ -25,27 +25,49 @@ export default function RegisterPage() {
     setIsLoading(true);
 
     try {
+      console.log('Submitting registration form...');
+      
+      // Create credentials object
+      const credentials = {
+        name,
+        email,
+        password,
+      };
+      
+      console.log('Sending registration request...');
+      
       const response = await fetch('/api/auth/register', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Accept': 'application/json',
         },
-        body: JSON.stringify({
-          name,
-          email,
-          password,
-        }),
+        body: JSON.stringify(credentials),
+        credentials: 'same-origin',
+        mode: 'cors',
       });
 
-      const data = await response.json();
+      console.log('Registration response status:', response.status);
+      
+      // Try to parse the response body
+      let data;
+      try {
+        data = await response.json();
+        console.log('Registration response data:', data);
+      } catch (e) {
+        console.error('Error parsing response:', e);
+        throw new Error('Failed to parse server response');
+      }
 
       if (!response.ok) {
-        throw new Error(data.message || 'Registration failed');
+        throw new Error(data?.message || `Registration failed with status: ${response.status}`);
       }
 
       // Redirect to login page
+      console.log('Registration successful, redirecting to login...');
       router.push('/login?registered=true');
     } catch (error) {
+      console.error('Registration error:', error);
       if (error instanceof Error) {
         setError(error.message);
       } else {
